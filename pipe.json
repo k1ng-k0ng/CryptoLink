@@ -1,0 +1,122 @@
+{
+  "$schema": "http://json-schema.org/schema#",
+  "$id": "https://cryptii.com/schemas/pipe.json",
+  "type": "object",
+  "title": "The cryptii.com pipe schema",
+  "required": [
+    "items"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "id": {
+      "$id": "#/properties/id",
+      "type": "integer",
+      "title": "Unique Id",
+      "description": "Unsigned 32-bit integer assigned when storing a pipe",
+      "readOnly": true,
+      "examples": [
+        1634492782
+      ]
+    },
+    "url": {
+      "$id": "#/properties/url",
+      "type": "string",
+      "title": "Pipe URL",
+      "default": null,
+      "readOnly": true,
+      "examples": [
+        "https://cryptii.com/pipes/enigma-machine"
+      ],
+      "format": "uri"
+    },
+    "title": {
+      "$id": "#/properties/title",
+      "type": "string",
+      "title": "Title",
+      "default": null,
+      "examples": [
+        "The Enigma machine"
+      ]
+    },
+    "description": {
+      "$id": "#/properties/description",
+      "type": "string",
+      "title": "Description",
+      "default": null,
+      "examples": [
+        "The Enigma cipher machine is well known for the vital role it played during WWII."
+      ]
+    },
+    "items": {
+      "$id": "#/properties/items",
+      "type": "array",
+      "title": "Brick arrangement",
+      "description": "Bricks contained in this pipe",
+      "minItems": 1,
+      "items": {
+        "$ref": "brick.json"
+      }
+    },
+    "content": {
+      "$id": "#/properties/content",
+      "type": "object",
+      "title": "Content",
+      "description": "Describes the initial pipe content and where it should propagates from",
+      "required": [
+        "data"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "data": {
+          "$id": "#/properties/content/properties/data",
+          "type": "string",
+          "title": "Data",
+          "description": "The given data MUST conform to the encoding specified by the encoding property",
+          "examples": [
+            "The quick brown fox jumps over the lazy dog."
+          ]
+        },
+        "encoding": {
+          "$id": "#/properties/content/properties/encoding",
+          "type": "string",
+          "enum": [
+            "text",
+            "base64"
+          ],
+          "title": "Data encoding",
+          "description": "Specifies how the data is encoded",
+          "default": "text",
+          "examples": [
+            "base64"
+          ]
+        },
+        "index": {
+          "$id": "#/properties/content/properties/index",
+          "type": "integer",
+          "title": "Injection index",
+          "description": "Zero-based index of the item before which the specified content should be injected. Specify the last item index + 1 to inject content at the very end of the pipe.",
+          "default": 0,
+          "examples": [
+            0
+          ]
+        }
+      }
+    },
+    "createdAt": {
+      "$id": "#/properties/createdAt",
+      "type": "number",
+      "title": "Created at",
+      "description": "Unix timestamp of pipe creation",
+      "default": null,
+      "readOnly": true
+    },
+    "updatedAt": {
+      "$id": "#/properties/updatedAt",
+      "type": "number",
+      "title": "Updated at",
+      "description": "Unix timestamp of last pipe update",
+      "default": null,
+      "readOnly": true
+    }
+  }
+}
