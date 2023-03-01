@@ -142,8 +142,7 @@ function decipher(cipher, key, dest) {
     }
 
     // depadding the decrypted data
-    let depaddedPlaintext = dePadding(outArray);
-    console.log(depaddedPlaintext)
+    let depaddedPlaintext = outArray; //dePadding(outArray);
     // transform data to utf8 string
     return stringToArray(decodeURIComponent(escape(String.fromCharCode(...depaddedPlaintext))));
 }

@@ -10,7 +10,7 @@ import sm3 from './SM/SM3'
 // import SM2Cipher from './SM/sm2/sm2'
 
 import * as Ciphers from './SM/cipher/ciphers.js';
-
+import * as Padding from './SM/padding/paddings.js';
 
 const meta = {
   name: 'block-cipher',
@@ -78,12 +78,35 @@ const modes = [
     hasIV: true,
     browserMode: true,
     nodeMode: true
-  },
-  {
+  },{
     name: 'ctr',
     label: 'CTR (Counter)',
     hasIV: true,
     browserMode: true,
+    nodeMode: true
+  },{
+    name: 'xts',
+    label: 'XTS',
+    hasIV: false,
+    browserMode: false,
+    nodeMode: true
+  },{
+    name: 'cts',
+    label: 'CTS (ciphertext stealing)',
+    hasIV: false,
+    browserMode: false,
+    nodeMode: true
+  },{
+    name: 'cfb',
+    label: 'CFB',
+    hasIV: false,
+    browserMode: false,
+    nodeMode: true
+  },{
+    name: 'ofb',
+    label: 'OFB',
+    hasIV: false,
+    browserMode: false,
     nodeMode: true
   },
   {
@@ -97,14 +120,14 @@ const modes = [
 
 const paddings = [
   {
-    name: 'pkcs7',
-    label: 'PKCS7',
+    name: 'none',
+    label: 'none',
     browserMode: true,
     nodeMode: true
   },
   {
-    name: 'none',
-    label: 'none',
+    name: 'pkcs7',
+    label: 'PKCS7',
     browserMode: true,
     nodeMode: true
   },
@@ -214,7 +237,7 @@ export default class BlockCipherEncoder extends Encoder {
     const algorithms = BlockCipherEncoder.getAlgorithms()
     const defaultAlgorithm = algorithms[0]
     const modes = BlockCipherEncoder.getModes()
-    const paddingAvailable = BlockCipherEncoder.isPaddingAvailable()
+    // const paddingAvailable = BlockCipherEncoder.isPaddingAvailable()
     const paddings = BlockCipherEncoder.getPaddings()
     const defaultPadding = paddings[0]
 
@@ -229,7 +252,7 @@ export default class BlockCipherEncoder extends Encoder {
         width: 6
       },
       {
-        name: 'paddings',
+        name: 'padding',
         type: 'enum',
         value: defaultPadding.name,
         elements: paddings.map(padding => padding.name),
@@ -237,14 +260,6 @@ export default class BlockCipherEncoder extends Encoder {
         randomizable: false,
         width: 6,
       },      
-      {
-        name: 'padding',
-        type: 'boolean',
-        value: false,
-        randomizable: false,
-        width: paddingAvailable ? 4 : 12,
-        visible: paddingAvailable
-      },
       {
         name: 'mode',
         type: 'enum',
@@ -289,12 +304,12 @@ export default class BlockCipherEncoder extends Encoder {
         const { keySize } = BlockCipherEncoder.getAlgorithm(value)
         
         const name = this.getSettingValue('algorithm')
-        if(name === '3des' || name === 'des'){
+        if(name === '3des' || name === 'des' || name === 'sm4'){
           this.getSetting('iv')
           .setVisible(false)
         }else{
-          this.getSetting('iv')
-          .setVisible(true)
+            this.getSetting('iv')
+            .setVisible(true)
         }
        
         if(name === 'aes-128' || name === 'aes-256'){
@@ -333,7 +348,12 @@ export default class BlockCipherEncoder extends Encoder {
           .setMinSize(blockSize)
           .setMaxSize(blockSize)
         break
-    }
+      case 'paddings':
+        // const pad = this.getSettingValue(value)
+        // console.log(pad)
+        // this.setSettingValue('padding', pad)
+        break  
+      }
   }
 
   /**
@@ -345,8 +365,8 @@ export default class BlockCipherEncoder extends Encoder {
    */
   async performTranslate (content, isEncode) {
     const message = content.getBytes()
-    const { algorithm, mode, key, padding, iv } = this.getSettingValues()
-
+    const { algorithm, mode, key, padding, iv} = this.getSettingValues()
+    
     try {
       // Try to encrypt or decrypt
       return await this.createCipher(
@@ -372,6 +392,7 @@ export default class BlockCipherEncoder extends Encoder {
    */
   async createCipher (name, mode, key, iv, padding, isEncode, message) {
     const algorithm = BlockCipherEncoder.getAlgorithm(name)
+    // const padtype = BlockCipherEncoder.getPadding(padding)
 
     const { hasIV } = BlockCipherEncoder.getMode(mode)
     if (!hasIV) {
@@ -381,13 +402,33 @@ export default class BlockCipherEncoder extends Encoder {
       case 'des':{
         console.log('des');
         const cipherName = algorithm.nodeAlgorithm + '-' + mode
+        let UINT8_BLOCK = 8
           // Create message cipher using Node Crypto async
 
           return new Promise((resolve, reject) => {
+            if(isEncode){
+              if(padding === "zero"){
+                message = Padding.Zero.pad(message, UINT8_BLOCK);              
+              }
+              if(padding === "pkcs7"){
+                message = Padding.Pkcs7.pad(message, UINT8_BLOCK);              
+              }
+              if(padding === "none"){
+                message = message; //Padding.Pkcs7.pad(message, UINT8_BLOCK);              
+              }
+            }
             const cipher = isEncode
               ? Ciphers.Des.cipher(message, key.slice(0,8))
               : Ciphers.Des.decipher(message, key.slice(0,8)) 
-
+            if(!isEncode){
+              if(padding === "zero"){                
+              }
+              if(padding === "pkcs7"){
+              }
+              if(padding === "none"){
+             
+              }
+            }
             resolve(new Uint8Array(cipher))
           })
 
@@ -541,8 +582,11 @@ const key = await importPrivateKey(pemEncodedKey);
         const cipher = isEncode
           ? nodeCrypto.createCipheriv(cipherName, key, iv)
           : nodeCrypto.createDecipheriv(cipherName, key, iv)
-
-        cipher.setAutoPadding(padding)
+          if(padding === "none"){
+            cipher.setAutoPadding(false)
+            }else{
+              cipher.setAutoPadding(BlockCipherEncoder.isPaddingAvailable())
+            }
 
         const resultBuffer = Buffer.concat([
           cipher.update(message),

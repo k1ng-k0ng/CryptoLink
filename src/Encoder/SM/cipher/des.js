@@ -121,7 +121,13 @@ const padding = (originalBuffer) => {
     if (originalBuffer === null) {
         return null;
     }
-    let paddingLength = UINT8_BLOCK - originalBuffer.length % UINT8_BLOCK;
+    let paddingLength = 0;
+    if(originalBuffer.length%UINT8_BLOCK === 0){
+        paddingLength = 0;
+    }else{
+        paddingLength = UINT8_BLOCK - originalBuffer.length % UINT8_BLOCK;
+    }    
+
     let paddedBuffer = new Array(originalBuffer.length + paddingLength);
 
     originalBuffer.forEach((val, index) => paddedBuffer[index] = val);
@@ -134,6 +140,14 @@ const dePadding = (paddedBuffer) => {
         return null;
     }
     let paddingLength = paddedBuffer[paddedBuffer.length - 1];
+    if(paddingLength==0){
+
+        for (var i = paddedBuffer.length; i > 0; --i) {
+            if (paddedBuffer[i] === 0){
+                paddingLength = paddedBuffer.length - i
+            }
+        }
+    }
     let originalBuffer = paddedBuffer.slice(0, paddedBuffer.length - paddingLength);
     return originalBuffer;
 }
@@ -374,6 +388,7 @@ function decipher(cipher, key, dest) {
 
     // depadding the decrypted data
     let depaddedPlaintext = dePadding(outArray);
+    console.log(depaddedPlaintext)
     // transform data to utf8 string
     return stringToArray(decodeURIComponent(escape(String.fromCharCode(...depaddedPlaintext))));
 }
